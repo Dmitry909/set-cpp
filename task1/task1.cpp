@@ -2,14 +2,9 @@
 #include <iostream>
 #include <numeric>
 
-const size_t INITIAL_SIZE = 0;
-const size_t INITIAL_HEIGHT = 0;
-
 template<typename T>
 class Set {
 private:
-    size_t size_ = INITIAL_SIZE;
-
     class TreeNode {
     public:
         T value;
@@ -31,7 +26,7 @@ private:
             delete right;
         }
 
-        TreeNode* SmallLeftRotate() {
+        TreeNode* SmallLeftRotation() {
             TreeNode* old_right = right;
             if (parent != nullptr) {
                 if (this == parent->left) {
@@ -42,7 +37,7 @@ private:
             }
             old_right->parent = parent;
             parent = old_right;
-            auto old_right_left = old_right->left;
+            TreeNode* old_right_left = old_right->left;
             if (old_right_left != nullptr) {
                 old_right_left->parent = this;
             }
@@ -54,27 +49,18 @@ private:
             return old_right;
         }
 
-        TreeNode* BigLeftRotate() {
-            auto old_right = right;
-            auto old_right_left = old_right->left;
-            auto old_right_left_left = old_right_left->left;
-            auto old_left_left_right = old_right_left->right;
-            if (parent != nullptr) {
-                if (this == parent->left) {
-                    parent->left = old_right_left;
-                } else {
-                    parent->right = old_right_left;
-                }
+        void ChangeRightLeft(TreeNode*& old_right, TreeNode*& old_right_left) {
+            right = right->left->left;
+            if (old_right_left->left != nullptr) {
+                old_right_left->left->parent = this;
             }
-            old_right_left->parent = parent;
-            right = old_right_left_left;
-            if (old_right_left_left != nullptr) {
-                old_right_left_left->parent = this;
+            old_right->left = old_right_left->right;
+            if (old_right_left->right != nullptr) {
+                old_right_left->right->parent = old_right;
             }
-            old_right->left = old_left_left_right;
-            if (old_left_left_right != nullptr) {
-                old_left_left_right->parent = old_right;
-            }
+        }
+
+        void ChangeRight(TreeNode*& old_right, TreeNode*& old_right_left) {
             parent = old_right_left;
             old_right->parent = old_right_left;
             old_right_left->left = this;
@@ -82,11 +68,26 @@ private:
             UpdateHeight();
             old_right->UpdateHeight();
             old_right_left->UpdateHeight();
+        }
+
+        TreeNode* BigLeftRotation() {
+            if (parent != nullptr) {
+                if (this == parent->left) {
+                    parent->left = right->left;
+                } else {
+                    parent->right = right->left;
+                }
+            }
+            right->left->parent = parent;
+            TreeNode* old_right = right;
+            TreeNode* old_right_left = right->left;
+            ChangeRightLeft(old_right, old_right_left);
+            ChangeRight(old_right, old_right_left);
             return old_right_left;
         }
 
-        TreeNode* SmallRightRotate() {
-            auto old_left = left;
+        TreeNode* SmallRightRotation() {
+            TreeNode* old_left = left;
             if (parent != nullptr) {
                 if (this == parent->left) {
                     parent->left = old_left;
@@ -96,7 +97,7 @@ private:
             }
             old_left->parent = parent;
             parent = old_left;
-            auto old_left_right = old_left->right;
+            TreeNode* old_left_right = old_left->right;
             if (old_left_right != nullptr) {
                 old_left_right->parent = this;
             }
@@ -108,27 +109,18 @@ private:
             return old_left;
         }
 
-        TreeNode* BigRightRotate() {
-            auto old_left = left;
-            auto old_left_right = old_left->right;
-            auto old_left_right_left = old_left_right->left;
-            auto old_left_right_right = old_left_right->right;
-            if (parent != nullptr) {
-                if (this == parent->left) {
-                    parent->left = old_left_right;
-                } else {
-                    parent->right = old_left_right;
-                }
+        void ChangeLeftRight(TreeNode*& old_left_right) {
+            left->right = old_left_right->left;
+            if (old_left_right->left != nullptr) {
+                old_left_right->left->parent = left;
             }
-            old_left_right->parent = parent;
-            old_left->right = old_left_right_left;
-            if (old_left_right_left != nullptr) {
-                old_left_right_left->parent = old_left;
+            left = old_left_right->right;
+            if (old_left_right->right != nullptr) {
+                old_left_right->right->parent = this;
             }
-            left = old_left_right_right;
-            if (old_left_right_right != nullptr) {
-                old_left_right_right->parent = this;
-            }
+        }
+
+        void ChangeLeft(TreeNode*& old_left, TreeNode*& old_left_right) {
             parent = old_left_right;
             old_left->parent = old_left_right;
             old_left_right->left = old_left;
@@ -136,29 +128,128 @@ private:
             UpdateHeight();
             old_left->UpdateHeight();
             old_left_right->UpdateHeight();
+        }
+
+        TreeNode* BigRightRotation() {
+            if (parent != nullptr) {
+                if (this == parent->left) {
+                    parent->left = left->right;
+                } else {
+                    parent->right = left->right;
+                }
+            }
+            left->right->parent = parent;
+            TreeNode* old_left = left;
+            TreeNode* old_left_right = left->right;
+            ChangeLeftRight(old_left_right);
+            ChangeLeft(old_left, old_left_right);
             return old_left_right;
         }
 
         TreeNode* Rotate() {
-            if (abs(static_cast<int>(GetHeight(left)) - static_cast<int>(GetHeight(right))) <= 1) {
+            size_t height_left = GetHeight(left);
+            size_t height_right = GetHeight(right);
+            if (height_left == height_right || height_left + 1 == height_right || height_left == height_right + 1) {
                 return this;
             }
             if (GetHeight(left) < GetHeight(right)) {
                 if (GetHeight(right->left) <= GetHeight(right->right)) {
-                    return SmallLeftRotate();
+                    return SmallLeftRotation();
                 }
-                return BigLeftRotate();
+                return BigLeftRotation();
             } else {
                 if (GetHeight(left->right) <= GetHeight(left->left)) {
-                    return SmallRightRotate();
+                    return SmallRightRotation();
                 }
-                return BigRightRotate();
+                return BigRightRotation();
             }
         }
     };
 
 public:
-    class iterator;
+    class iterator {
+    public:
+        const Set* owner;
+
+        TreeNode* node_ref;
+
+        iterator& operator=(const iterator& it) {
+            owner = it.owner;
+            node_ref = it.node_ref;
+            return *this;
+        }
+
+        iterator() : owner(nullptr), node_ref(nullptr) {
+
+        }
+
+        explicit iterator(const Set* const owner, TreeNode* node_ref) : owner(owner), node_ref(node_ref) {
+
+        }
+
+        iterator operator++(int) {
+            iterator to_ret = *this;
+            operator++();
+            return to_ret;
+        }
+
+        iterator& operator++() {
+            if (node_ref->right != nullptr) {
+                node_ref = node_ref->right;
+                while (node_ref->left != nullptr) {
+                    node_ref = node_ref->left;
+                }
+            } else {
+                while (node_ref->parent != nullptr && node_ref->parent->right == node_ref) {
+                    node_ref = node_ref->parent;
+                }
+                node_ref = node_ref->parent;
+            }
+            return *this;
+        }
+
+        iterator operator--(int) {
+            iterator to_ret = *this;
+            operator--();
+            return to_ret;
+        }
+
+        iterator& operator--() {
+            if (node_ref == nullptr) {
+                node_ref = owner->root_;
+                while (node_ref->right != nullptr) {
+                    node_ref = node_ref->right;
+                }
+            } else if (node_ref->left != nullptr) {
+                node_ref = node_ref->left;
+                while (node_ref->right != nullptr) {
+                    node_ref = node_ref->right;
+                }
+            } else {
+                while (node_ref->parent != nullptr && node_ref->parent->left == node_ref) {
+                    node_ref = node_ref->parent;
+                }
+                node_ref = node_ref->parent;
+            }
+            return *this;
+        }
+
+        const T& operator*() const {
+            return node_ref->value;
+        }
+
+        const T* operator->() const {
+            return &(node_ref->value);
+        }
+
+        bool operator==(const iterator& it) {
+            return node_ref == it.node_ref;
+        }
+
+        bool operator!=(const iterator& it) {
+            return node_ref != it.node_ref;
+        }
+    };
 
     Set() : size_(INITIAL_SIZE) {
         root_ = nullptr;
@@ -167,14 +258,14 @@ public:
     template<typename Iterator>
     Set(Iterator first, Iterator last) : size_(INITIAL_SIZE) {
         root_ = nullptr;
-        for (auto it = first; it != last; ++it) {
+        for (Iterator it = first; it != last; ++it) {
             insert(*it);
         }
     }
 
     Set(std::initializer_list<T> elems) : size_(INITIAL_SIZE) {
         root_ = nullptr;
-        for (const auto& elem: elems) {
+        for (const T& elem: elems) {
             insert(elem);
         }
     }
@@ -216,7 +307,7 @@ public:
             root_ = new TreeNode(elem);
             return;
         }
-        auto v = root_;
+        TreeNode* v = root_;
         while (v->value < elem || elem < v->value) {
             if (elem < v->value) {
                 if (v->left == nullptr) {
@@ -260,7 +351,7 @@ public:
     }
 
     iterator begin() const {
-        auto v = root_;
+        TreeNode* v = root_;
         while (v != nullptr && v->left != nullptr) {
             v = v->left;
         }
@@ -272,7 +363,7 @@ public:
     }
 
     iterator find(const T& elem) const {
-        auto v = root_;
+        TreeNode* v = root_;
         while (v != nullptr && (v->value < elem || elem < v->value)) {
             if (elem < v->value) {
                 v = v->left;
@@ -287,7 +378,7 @@ public:
         if (root_ == nullptr) {
             return iterator(this, nullptr);
         }
-        auto v = root_;
+        TreeNode* v = root_;
         while (v->value < elem || elem < v->value) {
             if (v->value < elem) {
                 if (v->right == nullptr) {
@@ -307,116 +398,12 @@ public:
         return iterator(this, v);
     }
 
-    class iterator {
-    public:
-        const Set* owner;
-
-        TreeNode* node_ref;
-
-        iterator& operator=(const iterator& it) {
-            owner = it.owner;
-            node_ref = it.node_ref;
-            return *this;
-        }
-
-        iterator() : owner(nullptr), node_ref(nullptr) {
-
-        }
-
-        explicit iterator(const Set* const owner, TreeNode* node_ref) : owner(owner), node_ref(node_ref) {
-
-        }
-
-        iterator operator++(int) {
-            auto to_ret = *this;
-            if (node_ref->right != nullptr) {
-                node_ref = node_ref->right;
-                while (node_ref->left != nullptr) {
-                    node_ref = node_ref->left;
-                }
-            } else {
-                while (node_ref->parent != nullptr && node_ref->parent->right == node_ref) {
-                    node_ref = node_ref->parent;
-                }
-                node_ref = node_ref->parent;
-            }
-            return to_ret;
-        }
-
-        iterator& operator++() {
-            if (node_ref->right != nullptr) {
-                node_ref = node_ref->right;
-                while (node_ref->left != nullptr) {
-                    node_ref = node_ref->left;
-                }
-            } else {
-                while (node_ref->parent != nullptr && node_ref->parent->right == node_ref) {
-                    node_ref = node_ref->parent;
-                }
-                node_ref = node_ref->parent;
-            }
-            return *this;
-        }
-
-        iterator operator--(int) {
-            auto to_ret = *this;
-            if (node_ref == nullptr) {
-                node_ref = owner->root_;
-                while (node_ref->right != nullptr) {
-                    node_ref = node_ref->right;
-                }
-            } else if (node_ref->left != nullptr) {
-                node_ref = node_ref->left;
-                while (node_ref->right != nullptr) {
-                    node_ref = node_ref->right;
-                }
-            } else {
-                while (node_ref->parent != nullptr && node_ref->parent->left == node_ref) {
-                    node_ref = node_ref->parent;
-                }
-                node_ref = node_ref->parent;
-            }
-            return to_ret;
-        }
-
-        iterator& operator--() {
-            if (node_ref == nullptr) {
-                node_ref = owner->root_;
-                while (node_ref->right != nullptr) {
-                    node_ref = node_ref->right;
-                }
-            } else if (node_ref->left != nullptr) {
-                node_ref = node_ref->left;
-                while (node_ref->right != nullptr) {
-                    node_ref = node_ref->right;
-                }
-            } else {
-                while (node_ref->parent != nullptr && node_ref->parent->left == node_ref) {
-                    node_ref = node_ref->parent;
-                }
-                node_ref = node_ref->parent;
-            }
-            return *this;
-        }
-
-        const T& operator*() const {
-            return node_ref->value;
-        }
-
-        const T* operator->() const {
-            return &(node_ref->value);
-        }
-
-        bool operator==(const iterator& it) {
-            return node_ref == it.node_ref;
-        }
-
-        bool operator!=(const iterator& it) {
-            return node_ref != it.node_ref;
-        }
-    };
-
 private:
+    static constexpr size_t INITIAL_SIZE = 0;
+    static constexpr size_t INITIAL_HEIGHT = 0;
+
+    size_t size_ = INITIAL_SIZE;
+
     /**
      * Copies all tree from @param from to @param to.
      * Firstly copies root's data, then copies left child, then right child.
@@ -463,7 +450,7 @@ private:
                 delete v;
                 return nullptr;
             }
-            auto parent = v->parent;
+            TreeNode* parent = v->parent;
             if (v == parent->left) {
                 parent->left = nullptr;
             } else {
@@ -473,14 +460,14 @@ private:
             return parent;
         }
         if (GetHeight(v->left) >= GetHeight(v->right)) {
-            auto next_v = v->left;
+            TreeNode* next_v = v->left;
             while (next_v->right != nullptr) {
                 next_v = next_v->right;
             }
             std::swap(v->value, next_v->value);
             return RecursiveErase(next_v);
         }
-        auto next_v = v->right;
+        TreeNode* next_v = v->right;
         while (next_v->left != nullptr) {
             next_v = next_v->left;
         }
@@ -488,11 +475,14 @@ private:
         return RecursiveErase(next_v);
     }
 
-    static size_t GetHeight(const TreeNode* node_ref) {
-        if (node_ref == nullptr) {
-            return static_cast<size_t>(INITIAL_HEIGHT);
+    /**
+     * if @param node_pointer is nullptr, return 0, else return the height if the tree
+     */
+    static size_t GetHeight(const TreeNode* node_pointer) {
+        if (node_pointer == nullptr) {
+            return INITIAL_HEIGHT;
         }
-        return node_ref->height;
+        return node_pointer->height;
     }
 
     TreeNode* root_ = nullptr;
