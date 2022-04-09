@@ -26,6 +26,10 @@ private:
             delete right;
         }
 
+        /**
+         * Makes this->right vertex the root, makes this its left child,
+         * and rehang their children in the same order
+         */
         TreeNode* SmallLeftRotation() {
             TreeNode* old_right = right;
             if (parent != nullptr) {
@@ -49,6 +53,9 @@ private:
             return old_right;
         }
 
+        /**
+         * Makes ex-children of @param old_right_left as children of this and this->right
+         */
         void ChangeRightLeft(TreeNode*& old_right, TreeNode*& old_right_left) {
             right = right->left->left;
             if (old_right_left->left != nullptr) {
@@ -60,6 +67,9 @@ private:
             }
         }
 
+        /**
+         * Makes @param old_right_left the root, sets its children, and sets its children's parent fields
+         */
         void ChangeRight(TreeNode*& old_right, TreeNode*& old_right_left) {
             parent = old_right_left;
             old_right->parent = old_right_left;
@@ -70,6 +80,10 @@ private:
             old_right_left->UpdateHeight();
         }
 
+        /**
+         * Makes this->right->left the root, and makes this and this->right its children,
+         * and rehang their children
+         */
         TreeNode* BigLeftRotation() {
             if (parent != nullptr) {
                 if (this == parent->left) {
@@ -86,6 +100,10 @@ private:
             return old_right_left;
         }
 
+        /**
+         * Makes this->left vertex the root, makes this its right child,
+         * and rehang their children in the same order
+         */
         TreeNode* SmallRightRotation() {
             TreeNode* old_left = left;
             if (parent != nullptr) {
@@ -109,6 +127,9 @@ private:
             return old_left;
         }
 
+        /**
+         * Makes ex-children of @param old_left_right as children of this and this->left
+         */
         void ChangeLeftRight(TreeNode*& old_left_right) {
             left->right = old_left_right->left;
             if (old_left_right->left != nullptr) {
@@ -120,6 +141,9 @@ private:
             }
         }
 
+        /**
+         * Makes @param old_left_right the root, sets its children, and sets its children's parent fields
+         */
         void ChangeLeft(TreeNode*& old_left, TreeNode*& old_left_right) {
             parent = old_left_right;
             old_left->parent = old_left_right;
@@ -130,6 +154,10 @@ private:
             old_left_right->UpdateHeight();
         }
 
+        /**
+         * Makes this->left->right the root, and makes this and this->left its children,
+         * and rehang their children
+         */
         TreeNode* BigRightRotation() {
             if (parent != nullptr) {
                 if (this == parent->left) {
@@ -146,10 +174,15 @@ private:
             return old_left_right;
         }
 
+        /**
+         * Makes suitable rotation and returns a root of subtree after it
+         */
         TreeNode* Rotate() {
             size_t height_left = GetHeight(left);
             size_t height_right = GetHeight(right);
-            if (height_left == height_right || height_left + 1 == height_right || height_left == height_right + 1) {
+            if ((height_left == height_right) ||
+                (height_left + 1 == height_right) ||
+                (height_left == height_right + 1)) {
                 return this;
             }
             if (GetHeight(left) < GetHeight(right)) {
@@ -169,86 +202,103 @@ private:
 public:
     class iterator {
     public:
-        const Set* owner;
-
-        TreeNode* node_ref;
-
         iterator& operator=(const iterator& it) {
             owner = it.owner;
-            node_ref = it.node_ref;
+            node_ptr = it.node_ptr;
             return *this;
         }
 
-        iterator() : owner(nullptr), node_ref(nullptr) {
+        iterator() : owner(nullptr), node_ptr(nullptr) {
 
         }
 
-        explicit iterator(const Set* const owner, TreeNode* node_ref) : owner(owner), node_ref(node_ref) {
+        explicit iterator(const Set* const owner, TreeNode* node_ptr) : owner(owner), node_ptr(node_ptr) {
 
         }
 
+        /**
+         * If right child exists, goes to it and then goes to left child until is doesn't exist
+         * Else goes to parent while it exists and we are it's right child, and then returns a parent
+         * @return
+         */
+        iterator& operator++() {
+            if (node_ptr->right != nullptr) {
+                node_ptr = node_ptr->right;
+                while (node_ptr->left != nullptr) {
+                    node_ptr = node_ptr->left;
+                }
+            } else {
+                while (node_ptr->parent != nullptr && node_ptr->parent->right == node_ptr) {
+                    node_ptr = node_ptr->parent;
+                }
+                node_ptr = node_ptr->parent;
+            }
+            return *this;
+        }
+
+        /**
+         * Memorizes current iterator, then calls operator++() and returns memorized iterator
+         */
         iterator operator++(int) {
             iterator to_ret = *this;
             operator++();
             return to_ret;
         }
 
-        iterator& operator++() {
-            if (node_ref->right != nullptr) {
-                node_ref = node_ref->right;
-                while (node_ref->left != nullptr) {
-                    node_ref = node_ref->left;
+        /**
+         * If left child exists, goes to it and then goes to right child until is doesn't exist
+         * Else goes to parent while it exists and we are it's left child, and then returns a parent
+         * @return
+         */
+        iterator& operator--() {
+            if (node_ptr == nullptr) {
+                node_ptr = owner->root_;
+                while (node_ptr->right != nullptr) {
+                    node_ptr = node_ptr->right;
+                }
+            } else if (node_ptr->left != nullptr) {
+                node_ptr = node_ptr->left;
+                while (node_ptr->right != nullptr) {
+                    node_ptr = node_ptr->right;
                 }
             } else {
-                while (node_ref->parent != nullptr && node_ref->parent->right == node_ref) {
-                    node_ref = node_ref->parent;
+                while (node_ptr->parent != nullptr && node_ptr->parent->left == node_ptr) {
+                    node_ptr = node_ptr->parent;
                 }
-                node_ref = node_ref->parent;
+                node_ptr = node_ptr->parent;
             }
             return *this;
         }
 
+        /**
+         * Memorizes current iterator, then calls operator--() and returns memorized iterator
+         */
         iterator operator--(int) {
             iterator to_ret = *this;
             operator--();
             return to_ret;
         }
 
-        iterator& operator--() {
-            if (node_ref == nullptr) {
-                node_ref = owner->root_;
-                while (node_ref->right != nullptr) {
-                    node_ref = node_ref->right;
-                }
-            } else if (node_ref->left != nullptr) {
-                node_ref = node_ref->left;
-                while (node_ref->right != nullptr) {
-                    node_ref = node_ref->right;
-                }
-            } else {
-                while (node_ref->parent != nullptr && node_ref->parent->left == node_ref) {
-                    node_ref = node_ref->parent;
-                }
-                node_ref = node_ref->parent;
-            }
-            return *this;
-        }
-
         const T& operator*() const {
-            return node_ref->value;
+            return node_ptr->value;
         }
 
         const T* operator->() const {
-            return &(node_ref->value);
+            return &(node_ptr->value);
         }
 
         bool operator==(const iterator& it) {
-            return node_ref == it.node_ref;
+            return node_ptr == it.node_ptr;
         }
 
         bool operator!=(const iterator& it) {
-            return node_ref != it.node_ref;
+            return node_ptr != it.node_ptr;
         }
+
+    private:
+        const Set* owner{nullptr};
+
+        TreeNode* node_ptr{nullptr};
     };
 
     Set() : size_(INITIAL_SIZE) {
@@ -274,6 +324,9 @@ public:
         *this = other;
     }
 
+    /**
+     * Deletes current tree and calls RecursiveCopy to copy data from @param other tree
+     */
     Set<T>& operator=(const Set<T>& other) {
         if (this == &other) {
             return *this;
@@ -301,6 +354,9 @@ public:
         return size_ == INITIAL_SIZE;
     }
 
+    /**
+     * Goes down to find a node where to put the new element @param elem, puts it and calls RenewUp(found_node)
+     */
     void insert(const T& elem) {
         if (root_ == nullptr) {
             ++size_;
@@ -328,6 +384,10 @@ public:
         RenewUp(v);
     }
 
+    /**
+     * Goes down to find a node where to erase the new element @param elem, erases it via RecursiveErase and
+     * calls RenewUp
+     */
     void erase(const T& elem) {
         if (root_ == nullptr) {
             return;
@@ -350,6 +410,9 @@ public:
         RenewUp(RecursiveErase(v));
     }
 
+    /**
+     * Goes down left from root while it is possible and returns a result
+     */
     iterator begin() const {
         TreeNode* v = root_;
         while (v != nullptr && v->left != nullptr) {
@@ -362,6 +425,9 @@ public:
         return iterator(this, nullptr);
     }
 
+    /**
+     * Goes down to find an @param elem, and returns it
+     */
     iterator find(const T& elem) const {
         TreeNode* v = root_;
         while (v != nullptr && (v->value < elem || elem < v->value)) {
@@ -374,6 +440,9 @@ public:
         return iterator(this, v);
     }
 
+    /**
+     * Finds a the nearest node to an @elem and after if its value if less than @param elem, goes up until if isn't
+     */
     iterator lower_bound(const T& elem) const {
         if (root_ == nullptr) {
             return iterator(this, nullptr);
